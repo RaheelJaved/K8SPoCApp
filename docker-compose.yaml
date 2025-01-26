@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  passenger-service:
+    build:
+      context: . # Path to the folder containing Dockerfile
+      dockerfile: passenger-service/Dockerfile
+    container_name: passenger-service
+    ports:
+      - "5001:8080" # Map container port 8080 to host port 5001
+    environment:
+      ConnectionStrings__Postgres: "Host=postgres;Database=pss;Username=admin;Password=password"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - otel-collector
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # OTLP ingest
+      - "14268:14268" # Jaeger Collector HTTP
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # RabbitMQ message broker port
+      - "15672:15672" # RabbitMQ management UI port
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pss
+    ports:
+      - "5432:5432" # PostgreSQL port
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com  # Default login email
+      PGADMIN_DEFAULT_PASSWORD: admin          # Default login password
+    ports:
+      - "5050:80"  # Maps pgAdmin to localhost:5050
+    depends_on:
+      - postgres   # Ensures PostgreSQL is running before pgAdmin starts
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: otel-collector
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus metrics port
+    volumes:
+      - otel-config:/etc/otel-collector-config
+    command:
+      ["--config=/etc/otel-collector-config/otel-collector-config.yaml"]
+    depends_on:
+      - jaeger
+
+
+
+volumes:
+  postgres-data:
+  otel-config:
+
+#after "docker compose up -d" copy the otel-collector-config.yaml file to the otel-config volume, and restart the otel-collector
+# docker cp ./otel-collector-config.yaml otel-collector:/etc/otel-collector-config/otel-collector-config.yaml
+# docker restart otel-collector
