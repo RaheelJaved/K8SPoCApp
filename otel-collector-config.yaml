@@ -3,16 +3,14 @@ receivers:
         protocols:
             grpc:
                 endpoint: '0.0.0.0:4317'
-            http:
-                endpoint: '0.0.0.0:4318'
+            # http:
+            #     endpoint: '0.0.0.0:4318'
 
 exporters:
-    debug: # Use the debug exporter instead of logging
-        loglevel: debug
     prometheus:
-        endpoint: '0.0.0.0:8889'
-    otlp:
-        endpoint: 'http://jaeger:14250'
+        endpoint: '0.0.0.0:8889' # changed from 8888 to 8889 to avoid conflict with otel collector's internal metrics port
+    otlp/jaeger:
+        endpoint: 'jaeger:4317'
         tls:
             insecure: true
 
@@ -20,10 +18,7 @@ service:
     pipelines:
         traces:
             receivers: [otlp]
-            exporters: [debug, otlp]
+            exporters: [otlp/jaeger]
         metrics:
             receivers: [otlp]
-            exporters: [debug, prometheus]
-        logs:
-            receivers: [otlp]
-            exporters: [debug]
+            exporters: [prometheus]

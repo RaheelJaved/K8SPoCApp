@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using Microsoft.EntityFrameworkCore;
 using PassengerService.Data;
@@ -19,8 +20,11 @@ internal class Program
             options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
         // Retrieve OTLP endpoint from environment variables
-        var otelEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://otel-collector:4318";
-
+        var otelEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://otel-collector:4317";
+        // Read the telemetry settings from configuration.
+        var telemetryConfig = builder.Configuration.GetSection("Telemetry");
+        bool enableConsoleTracing = telemetryConfig.GetValue<bool>("Tracing:EnableConsoleExporter");
+        bool enableConsoleMetrics = telemetryConfig.GetValue<bool>("Metrics:EnableConsoleExporter");
 
 
         // OpenTelemetry Configuration
@@ -37,8 +41,11 @@ internal class Program
                     .AddOtlpExporter(options =>
                     {
                         options.Endpoint = new Uri(otelEndpoint);
-                    })
-                    .AddConsoleExporter();
+                        options.Protocol = OtlpExportProtocol.Grpc;
+                    });
+
+                if (enableConsoleTracing)
+                    tracerProviderBuilder.AddConsoleExporter();
             })
             .WithMetrics(meterProviderBuilder =>
             {
@@ -51,7 +58,11 @@ internal class Program
                     .AddOtlpExporter(options =>
                     {
                         options.Endpoint = new Uri(otelEndpoint);
+                        options.Protocol = OtlpExportProtocol.Grpc;
                     });
+
+                if (enableConsoleMetrics)
+                    meterProviderBuilder.AddConsoleExporter();
             });
 
         // Add services to the container

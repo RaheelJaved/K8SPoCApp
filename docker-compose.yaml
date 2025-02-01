@@ -1,27 +1,36 @@
-version: '3.8'
-
 services:
   passenger-service:
     build:
       context: . # Path to the folder containing Dockerfile
       dockerfile: passenger-service/Dockerfile
+    image: passenger-service
     container_name: passenger-service
     ports:
       - "5001:8080" # Map container port 8080 to host port 5001
     environment:
       ConnectionStrings__Postgres: "Host=postgres;Database=pss;Username=admin;Password=password"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      Telemetry__Tracing__EnableConsoleExporter: "false"
+      Telemetry__Metrics__EnableConsoleExporter: "false"
     depends_on:
       - postgres
       - rabbitmq
       - otel-collector
+    networks:
+      - mockpss
+
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
     ports:
       - "16686:16686" # Jaeger UI
-      - "14250:14250" # OTLP ingest
-      - "14268:14268" # Jaeger Collector HTTP
+      #- "14250:14250" # OTLP ingest
+      #- "14268:14268" # Jaeger Collector HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - mockpss
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -36,6 +45,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - mockpss
 
   postgres:
     image: postgres:15
@@ -53,6 +64,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - mockpss
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -64,27 +77,28 @@ services:
       - "5050:80"  # Maps pgAdmin to localhost:5050
     depends_on:
       - postgres   # Ensures PostgreSQL is running before pgAdmin starts
+    networks:
+      - mockpss
 
   otel-collector:
     image: otel/opentelemetry-collector:latest
     container_name: otel-collector
     ports:
       - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "8889:8889"   # Prometheus metrics port
+      #- "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus will scrape the metrics from this port
     volumes:
-      - otel-config:/etc/otel-collector-config
-    command:
-      ["--config=/etc/otel-collector-config/otel-collector-config.yaml"]
+      - ./otel-collector-config.yaml:/etc/otel-collector-config/otel-collector-config.yaml:ro
+    command: ["--config=/etc/otel-collector-config/otel-collector-config.yaml"]
     depends_on:
       - jaeger
-
-
+    networks:
+      - mockpss
 
 volumes:
   postgres-data:
   otel-config:
 
-#after "docker compose up -d" copy the otel-collector-config.yaml file to the otel-config volume, and restart the otel-collector
-# docker cp ./otel-collector-config.yaml otel-collector:/etc/otel-collector-config/otel-collector-config.yaml
-# docker restart otel-collector
+networks:
+  mockpss:
+    attachable: true  
