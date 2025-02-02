@@ -88,10 +88,35 @@ services:
       #- "4318:4318"   # OTLP HTTP
       - "8889:8889"   # Prometheus will scrape the metrics from this port
     volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config/otel-collector-config.yaml:ro
+      - ./config/otel-collector-config.yaml:/etc/otel-collector-config/otel-collector-config.yaml:ro
     command: ["--config=/etc/otel-collector-config/otel-collector-config.yaml"]
     depends_on:
       - jaeger
+    networks:
+      - mockpss
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - mockpss
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - ./config/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
     networks:
       - mockpss
 
