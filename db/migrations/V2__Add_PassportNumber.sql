@@ -1,0 +1,1 @@
+ALTER TABLE "Passengers" ADD COLUMN IF NOT EXISTS "PassportNumber" TEXT;

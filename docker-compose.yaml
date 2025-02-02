@@ -13,9 +13,14 @@ services:
       Telemetry__Tracing__EnableConsoleExporter: "false"
       Telemetry__Metrics__EnableConsoleExporter: "false"
     depends_on:
-      - postgres
-      - rabbitmq
-      - otel-collector
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+      flyway: 
+        condition: service_started
     networks:
       - mockpss
 
@@ -41,10 +46,14 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:15672"]
-      interval: 30s
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
       timeout: 10s
-      retries: 5
+      retries: 10
+      #test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      #interval: 30s
+      #timeout: 10s
+      #retries: 5
     networks:
       - mockpss
 
@@ -64,6 +73,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - mockpss
+
+  flyway:
+    image: flyway/flyway:latest
+    container_name: flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./db/migrations:/flyway/sql
+    command: [
+      "-X",
+      "-url=jdbc:postgresql://postgres:5432/pss",
+      "-user=admin",
+      "-password=password",
+      "migrate"
+    ]
     networks:
       - mockpss
 
@@ -122,7 +149,6 @@ services:
 
 volumes:
   postgres-data:
-  otel-config:
 
 networks:
   mockpss:

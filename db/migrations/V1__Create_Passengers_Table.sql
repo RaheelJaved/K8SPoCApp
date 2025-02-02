@@ -1,0 +1,7 @@
+CREATE TABLE "Passengers" (
+	"Id" SERIAL PRIMARY KEY,
+	"Name" TEXT NOT NULL,
+	"PNR" TEXT NOT NULL,
+	"FlightId" TEXT NOT NULL,
+	"Status" TEXT NOT NULL
+);
