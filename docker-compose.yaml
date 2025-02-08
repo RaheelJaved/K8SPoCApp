@@ -12,6 +12,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       Telemetry__Tracing__EnableConsoleExporter: "false"
       Telemetry__Metrics__EnableConsoleExporter: "false"
+      RabbitMQ__URI: "amqp://admin:admin@rabbitmq:5672"
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,10 +51,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
-      #test: ["CMD", "curl", "-f", "http://localhost:15672"]
-      #interval: 30s
-      #timeout: 10s
-      #retries: 5
     networks:
       - mockpss
 

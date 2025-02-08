@@ -5,6 +5,7 @@ using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using Microsoft.EntityFrameworkCore;
 using PassengerService.Data;
+using PassengerService.Messaging;
 
 internal class Program
 {
@@ -19,6 +20,8 @@ internal class Program
         builder.Services.AddDbContext<PassengerContext>(options =>
             options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
+        builder.Services.AddSingleton<IRabbitMQService, RabbitMQService>();
+
         // Retrieve OTLP endpoint from environment variables
         var otelEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://otel-collector:4317";
         // Read the telemetry settings from configuration.
@@ -32,7 +35,11 @@ internal class Program
             .WithTracing(tracerProviderBuilder =>
             {
                 tracerProviderBuilder
-                    .AddAspNetCoreInstrumentation()
+                    .AddAspNetCoreInstrumentation(options =>
+                        {
+                            options.RecordException = true;
+                        }
+                    )
                     .AddHttpClientInstrumentation()
                     .AddEntityFrameworkCoreInstrumentation()
                     .SetResourceBuilder(

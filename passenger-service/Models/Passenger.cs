@@ -10,7 +10,7 @@ namespace PassengerService.Models
         public int Id { get; set; }
         public required string Name { get; set; }
         public required string PNR { get; set; }
-        public required string FlightId { get; set; }
+        public required string FlightNumber { get; set; }
         public required string Status { get; set; }
     }
 
