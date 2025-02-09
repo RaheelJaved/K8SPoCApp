@@ -29,13 +29,19 @@ This document provides a step-by-step guide for implementing the Passenger Servi
      ├── shared/  (shared libraries/configurations)
      └── docker-compose.yml
      ```
+### **1.2 Observability and Deployment**
 
-3. **OpenTelemetry Setup:**
+1. **OpenTelemetry Setup:**
    - Install the OpenTelemetry Collector in Docker.
    - Configure tracing, logging, and metrics collection.
+   - While development each service, pay special attention to setup instrumentation at all important places, not just the default telemetry that comes with various packages.
 
-4. **RabbitMQ Setup:**
+2. **RabbitMQ Setup:**
    - Deploy RabbitMQ in a Docker container with management plugins enabled.
+
+## **1.3: Dockerize Each Service**
+1. Create **Dockerfiles** for each service.
+2. Use **docker-compose.yml** to manage local deployment of all services, including RabbitMQ, PostgreSQL, and OpenTelemetry Collector.
 
 ---
 
@@ -58,17 +64,28 @@ The `PassengerService` provides core functionalities shared by other services. I
 6. Write unit and integration tests to validate functionality.
 
 ---
+## **Step 3: Develop Flight Related Services**
 
-## **Step 3: Develop Dependent BFFs**
+### **3.1 Flight Inventory Service**
+- Implement scheduling and inventory management APIs. After a light is scehduled and has inventory, it will be available for booking.
+- Publish events like `ScheduleCreated` and `InventoryUpdated`.
 
-### **3.1 Online Check-In (OLCI)**
+### **3.2 Flight Booking Service**
+- Develop APIs for booking, retrieving, and canceling flights. When a booking is created, `PassengerService` APIs will be able to act on those passengers in the booking.
+- Publish events like `BookingCreated` and `BookingCancelled`.
+
+---
+
+## **Step 4: Develop Dependent BFFs**
+
+### **4.1 Online Check-In (OLCI)**
 1. Create a `.NET 8 Web API Project`.
 2. Add tailored APIs for online check-in:
    - `GET /checkin/{pnr}` - Retrieve booking details for check-in.
    - `POST /checkin` - Perform online check-in.
 3. Integrate with `PassengerService` APIs for passenger operations.
 
-### **3.2 Departure Control System (DCS)**
+### **4.2 Departure Control System (DCS)**
 1. Create a `.NET 8 Web API Project`.
 2. Add tailored APIs for agent workflows:
    - `GET /flights` - View flights with passenger details.
@@ -79,29 +96,15 @@ The `PassengerService` provides core functionalities shared by other services. I
 
 ---
 
-## **Step 4: Incrementally Add Other Services**
+## **Step 5: Incrementally Add Other Services**
 
-### **4.1 Flight Inventory Service**
-- Implement scheduling and inventory management APIs.
-- Publish events like `ScheduleCreated` and `InventoryUpdated`.
-
-### **4.2 Flight Booking Service**
-- Develop APIs for booking, retrieving, and canceling flights.
-- Publish events like `BookingCreated` and `BookingCancelled`.
-
-### **4.3 Flight Ops Service**
+### **5.1 Flight Ops Service**
 - Build APIs to manage flight statuses (scheduled, departed, canceled).
 - Publish `FlightStatusUpdated` events.
 
-### **4.4 Flight Analytics Service**
+### **5.2 Flight Analytics Service**
 - Set up event consumption from RabbitMQ.
 - Implement APIs to view reports and analytics.
-
----
-
-## **Step 5: Dockerize Each Service**
-1. Create **Dockerfiles** for each service.
-2. Use **docker-compose.yml** to manage local deployment of all services, including RabbitMQ, PostgreSQL, and OpenTelemetry Collector.
 
 ---
 
@@ -114,11 +117,17 @@ The `PassengerService` provides core functionalities shared by other services. I
    - Deploy the full system locally using Docker Compose.
    - Simulate operations like creating schedules, bookings, and check-ins.
 
+3. **Simulation Scripts**
+   - Create simulation scripts for opertions
+     -  Scheduling
+	 -  Booking
+	 
 ---
 
 ## **Step 7: Prepare for Kubernetes**
 1. Define **Kubernetes manifests** (e.g., deployments, services, config maps) for each service.
 2. Test deployment on **Minikube** or a Kubernetes cluster.
+3. Create **Heml Chart** for the whole system. Deploy the the system using Helm Chart in a Kubernetes cluster.
 
 ---
 

@@ -66,7 +66,7 @@ This document outlines the design and implementation plan for the Passenger Serv
 
 -   **Name:** `OLCI`
 -   **Functionality:**
-    -   Customer-facing backend with tailored APIs.
+    -   Customer-facing web app with backend tailored APIs, for online check-in.
     -   Relies on `PassengerService` for passenger operations.
 -   **APIs:**
     -   `GET /checkin/{pnr}` - Retrieve booking details for check-in.
@@ -74,21 +74,33 @@ This document outlines the design and implementation plan for the Passenger Serv
 -   **Technology:**
     -   **Language:** .NET 8
     -   **Database:** PostgreSQL (shared with PassengerService)
+	-   **Frontend:** ReactJS
+-	**UI:**
+	-	Retrieve booking by PNR. Show list of passengers
+	-	Select one or more passengers and check-in
+ 
 
 ### **1.5 DCS (Departure Control System)**
 
 -   **Name:** `DCS`
 -   **Functionality:**
-    -   Agent-facing backend for airport check-in workflows.
-    -   Relies on `PassengerService` for passenger operations.
+    -   Agent-facing web app with backend tailored APIs, for airport check-in workflows.
+    -   Relies on `PassengerService` for passenger operations, and `BookingService` for flight retrieval.
 -   **APIs:**
-    -   `GET /flights` - View flights with passenger details.
+    -   `GET /flights` - View list of flights with basic information and passenger counts.
+	-	`GET /flights/{flightNumber}` - View passengers in a given flight.
     -   `POST /checkin/{passengerId}` - Check-in a passenger.
     -   `POST /offload/{passengerId}` - Offload a passenger.
     -   `POST /board/{passengerId}` - Board a passenger.
 -   **Technology:**
     -   **Language:** .NET 8
     -   **Database:** PostgreSQL (shared with PassengerService)
+	-   **Frontend:** ReactJS
+-	**UI:**
+	-	Show list of flights scheduled to depart from now onwards
+	-	Select a flight, show list of booked passengers, checked-in and boarded passengers
+	-	Select booked passengers (not checked-in yet) and check-in them
+	-	Select checked-in passengers and offload or board them
 
 ### **1.6 Airport Ops Service**
 
@@ -181,6 +193,11 @@ This system design provides a modular, scalable, and maintainable architecture f
     after "docker compose up -d" copy the otel-collector-config.yaml file to the otel-config volume, and restart the otel-collector
     $ docker cp ./otel-collector-config.yaml otel-collector:/etc/otel-collector-config/otel-collector-config.yaml
     $ docker restart otel-collector
+
+### PgAdmin (PostgreSQL Web UI)
+    http://localhost:5050/
+	user: admin@example.com
+	password: admin
 
 ### Otel Collector metrics exposed on
 
